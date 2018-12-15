@@ -1,0 +1,1 @@
+[["2-perceptron neural net", " train ", 42.85714285714286], ["2-perceptron neural net", " test ", 84.31372549019608]]

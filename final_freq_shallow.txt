@@ -1,0 +1,1 @@
+[["Shallow CNN", " train ", 83.16831683168317], ["Shallow CNN", " test ", 83.33333333333334]]

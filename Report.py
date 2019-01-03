@@ -32,16 +32,10 @@
 
 # # Libraries Loading
 
-# In[1]:
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 #get_ipython().run_line_magic('matplotlib', 'inline')
-
-
-# In[2]:
 
 
 import platform
@@ -51,39 +45,20 @@ import os
 from scipy.io import wavfile
 
 
-# In[3]:
-
-
 import torch
 #from torch import Tensor
 from torch import nn
 import torch.nn.functional as F
 
-
-# In[4]:
-
-
 #import pandas_profiling
 #get_ipython().run_line_magic('matplotlib', 'inline')
 
-
-# In[5]:
-
-
 import json
-
 
 # # Data Preparation & Cleaning
 
-# In[6]:
-
-
 data_main_folder = 'data'
 wav_folder = 'wav'
-
-
-# In[7]:
-
 
 platform_system = platform.system()
 file_separator=''
@@ -92,21 +67,10 @@ if(platform_system=='Windows'):
 else:#(platform_system=='Linux'):
     file_separator = '/'
 
-
-# In[8]:
-
-
 wav_path = data_main_folder + file_separator + wav_folder
-
-
-# In[9]:
-
 
 wav_files = glob.glob(wav_path+file_separator+'*.wav')
 wav_files.sort()
-
-
-# In[10]:
 
 
 wav_files[:1]
@@ -184,15 +148,10 @@ wav_files[:1]
 
 # # Constructing the dataset
 
-# In[11]:
-
 
 emotion_german = ['W','L','E','A','F','T','N']
 emotion_english = ['Anger','Boredom','Disgust','Fear','Happiness','Sadness','Neutral']
 emotion_numbers = np.arange(0,7)
-
-
-# In[12]:
 
 
 def loading_wav_file(file_wav, emotion_german,emotion_numbers):
@@ -206,9 +165,6 @@ def loading_wav_file(file_wav, emotion_german,emotion_numbers):
     y = emotion_numbers[index_emotion]
     fs, x = wavfile.read(file_wav)
     return y, x, fs, code_text, individual_number
-
-
-# In[13]:
 
 
 y=[]
@@ -227,20 +183,11 @@ for file_wav in wav_files:
     ind_numb_array.append(individual_number)
 
 
-# In[14]:
-
-
 data_complete = pd.DataFrame(columns=['y','x','length','fs','ind_numb','text'])
-
-
-# In[15]:
 
 
 x = np.array(x)
 y = np.array(y)
-
-
-# In[16]:
 
 
 data_complete['y'] = y
@@ -250,21 +197,11 @@ data_complete['fs'] = fs_array
 data_complete['ind_numb'] = ind_numb_array
 data_complete['text'] = code_text_array
 
-
 # # Profiling of the data-set
-
-# In[17]:
-
-
 #profile_file = pandas_profiling.ProfileReport(data_complete)
 #profile_file
 
-
-# In[18]:
-
-
 data_complete.y.value_counts()
-
 
 # ## Some Comments
 # Sampling rate is constant 16 kHz. But what appear as the main challenge with this data-set are:
@@ -274,41 +211,17 @@ data_complete.y.value_counts()
 # ### Strategies
 # To address the variable length, we will proceed with the most _force brute straightforward_ techniques, **zero padding** and see what results we get.
 
-# In[19]:
-
-
 data_complete_pr = data_complete[(data_complete.length > data_complete.length.quantile(.05))&(data_complete.length < data_complete.length.quantile(.95))]
-
-
-# In[20]:
-
 
 #profile_file_pr = pandas_profiling.ProfileReport(data_complete_pr)
 #profile_file_pr
 
-
-# In[21]:
-
-
 data_complete_pr.y.value_counts()
-
-
-# In[22]:
-
-
 data_complete.y.value_counts() - data_complete_pr.y.value_counts()
-
-
-# In[23]:
-
 
 data_complete_pr.length.describe()
 
-
 # # Feature Engineering & Modeling
-
-# In[24]:
-
 
 longest_length = data_complete_pr.length.max()
 shortest_length = data_complete_pr.length.min() - 22000
@@ -316,10 +229,6 @@ print("Shortest lenght:" , shortest_length)
 y_pr = data_complete_pr['y'].values
 x_pr = data_complete_pr['x'].values
 length_pr = data_complete_pr['length'].values
-
-
-# In[25]:
-
 
 def cut_into_shorter_samples(x_sample,y_sample,lenght_sample, shortest_length, threshold):
     """Cuts the x signal into pieces of lenght shortest_length.
@@ -359,9 +268,6 @@ def cut_into_shorter_samples(x_sample,y_sample,lenght_sample, shortest_length, t
     return  x_array, y_array, length_array
 
 
-# In[26]:
-
-
 def zero_pad_to_longest(x_pr,lengtr_pr,longest_length):
     """Zero pads all the x signals to match the lenght given which is longer than all the lengths."""
     x_final = np.zeros((len(lengtr_pr),longest_length))
@@ -376,10 +282,6 @@ def zero_pad_to_longest(x_pr,lengtr_pr,longest_length):
         length_array_final.append(len(x_pad)) #Just to check that indeed all are the same length
     return x_final,length_array_final
 
-
-# In[27]:
-
-
 final_x = []
 final_lengths = []
 final_y = []
@@ -390,29 +292,12 @@ for i  in range(len(x_pr)):
         final_y.append(y_g)
         final_lengths.append(l_g)
 
-
-# In[28]:
-
-
 x_pr = np.array(final_x)
 y_pr = np.array(final_y)
 length_pr = np.array(final_lengths)
 
-
-# In[29]:
-
-
 #print(np.shape(x_pr))
-
-
-# In[30]:
-
-
 #plt.hist(y_pr)
-
-
-# In[31]:
-
 
 def split_data_numpy(x, y, ratio=0.8, seed=1):
     """
@@ -435,30 +320,14 @@ def split_data_numpy(x, y, ratio=0.8, seed=1):
     y_test = y[index_test]
     return x_train , y_train, x_test, y_test
 
-
-# In[32]:
-
-
 X_train , y_train, X_test, y_test = split_data_numpy(x_pr, y_pr)
-
-
-# In[33]:
-
 
 X_train_std = np.nanstd(X_train,axis=0)
 index_std_0 = np.argwhere(X_train_std==0)
 X_train_std[index_std_0] = 1
 
-
-# In[34]:
-
-
 dtype = torch.float
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
-# In[35]:
-
 
 test_input = torch.from_numpy((X_test - X_train.mean(axis=0))/X_train_std).float().to(device)
 train_input = torch.from_numpy((X_train - X_train.mean(axis=0))/X_train_std).float().to(device)
@@ -467,19 +336,11 @@ train_target = torch.from_numpy(y_train).long().squeeze().to(device)
 print("Train input: ", train_input.size())
 print("Test input: ", test_input.size())
 
-
-# In[36]:
-
-
 train_input = train_input.float().view(train_input.size(0), 1, -1)
 test_input = test_input.float().view(test_input.size(0), 1, -1)
 
 print("Train input: ", train_input.size())
 print("Test input: ", test_input.size())
-
-
-# In[37]:
-
 
 def split_data(dataset,target,k_fold):
     """"
@@ -635,10 +496,6 @@ def cross_validate(model,criterion,optimizer,scheduler,dataset,target,k_fold,n_e
 
     return mean_tr_loss, mean_val_loss, mean_tr_err, mean_val_err
 
-
-# In[38]:
-
-
 class ShallowLinear(nn.Module):
     """2-perceptron neural net: Implements a net:
     linear(in_features, size_hidden) -> ReLU() -> linear(size_hidden, n_classes)"""
@@ -668,10 +525,6 @@ class ShallowLinear(nn.Module):
         self.lin2.reset_parameters()
     def name(self):
         return '2-perceptron neural net'
-
-
-# In[59]:
-
 
 class EEGNet_2018(nn.Module):
     """EEGNet : Compact CNN for EEG data. Sound data is similar as they have information local in time and several possible channels.
@@ -757,16 +610,13 @@ class EEGNet_2018(nn.Module):
         return "EEG Net (2018)"
 
 
-# In[60]:
-
-
 model =  ShallowLinear(in_features=shortest_length,size_hidden=10,n_classes=len(emotion_numbers))
 model_2 =  EEGNet_2018(n_channels=1,n_time_points=shortest_length,n_filters=8, n_classes=len(emotion_numbers))
 optimizer = torch.optim.Adam
-scheduler_gamma = 0.99
+scheduler_gamma = 0.95
 criterion = nn.CrossEntropyLoss()
-lr = 1e-3
-epochs =75
+lr = 1e-4
+epochs =20
 cross_val = True
 model_list = [model,model_2]
 optimizer_list = [optimizer]*len(model_list)
@@ -775,24 +625,15 @@ criterion_list = [criterion]*len(model_list)
 lr_list = [lr]*len(model_list)
 epochs_list = [epochs]*len(model_list)
 
-
 # # Results & Visualizations
-
-# In[61]:
-
-
 cross_val = True
 save_loss = True
-
-
-# In[ ]:
-
 
 dump_final = []
 if(cross_val):
     dump = []
 
-for i in range(1,len(model_list)):
+for i in range(0,len(model_list)):
     model = model_list[i]
     optimizer = optimizer_list[i](model.parameters(),lr=lr_list[i])
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer,scheduler_gamma_list[i])
@@ -817,9 +658,6 @@ for i in range(1,len(model_list)):
     dump_final.append((model.name(), " test " , final_te_error))
 
 
-# In[ ]:
-
-
 file = open('final_'+str(3)+'t.txt','w+')
 json.dump(dump_final,file)
 file.close()
@@ -830,9 +668,8 @@ if(cross_val):
     file.close()
 
 
-# In[117]:
-
-
+path='plots_current'+ file_separator
+n_time_points = shortest_length
 f_name = 'cv_3t.txt'
 file= open(f_name,'r')
 
@@ -868,9 +705,6 @@ plt.legend()
 plt.savefig(path+"classErr_all_"+str(n_time_points)+".png")
 
 
-# In[58]:
-
-
 # i=1
 # model = model_list[i]
 # optimizer = optimizer_list[i](model.parameters(),lr=lr_list[i])
@@ -881,21 +715,16 @@ plt.savefig(path+"classErr_all_"+str(n_time_points)+".png")
 # train_model(model,criterion,optimizer,scheduler,train_input,train_target,n_epochs=2,batch_size=10,verbose=2)
 #
 #
-# # In[49]:
-#
+
 #
 # final_tr_error = evaluate_error(model,train_input,train_target)
 # final_te_error = evaluate_error(model,test_input,test_target)
 # print("Train error = {} ; Test error = {} ".format(final_tr_error,final_te_error))
 #
 #
-# # In[55]:
+
 #
 #
 # shortest_length//4 +1 - 20
 #
 #
-# # In[ ]:
-#
-#
-# 18652

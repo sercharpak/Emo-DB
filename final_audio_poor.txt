@@ -1,0 +1,1 @@
+[["2-perceptron neural net", " train ", 78.07420494699646], ["2-perceptron neural net", " test ", 78.31920903954803], ["EEG Net (2018)", " train ", 82.7208480565371], ["EEG Net (2018)", " test ", 83.61581920903956]]
